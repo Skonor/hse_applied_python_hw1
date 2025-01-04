@@ -1,6 +1,7 @@
 import requests
 import datetime
 import asyncio
+import aiohttp
 
 class WeatherService:
     def __init__(self):
@@ -15,13 +16,15 @@ class WeatherService:
             'appid': api_key,
             'units': 'metric'
         }
-        response = requests.get(self.url, params=params)
-        if response.status_code == 200:
-            self.cur_weather = response.json()['main']['temp']
-            self.cur_city = city
-            self.timestamp = response.json()['dt']
-        elif response.status_code == 401:
-            self.cur_weather = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.url, params=params) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    self.cur_weather = data['main']['temp']
+                    self.cur_city = city
+                    self.timestamp = data['dt']
+                elif response.status == 401:
+                    self.cur_weather = await response.json()
         
     def get_weather(self):
         return self.cur_weather, self.cur_city
